@@ -243,12 +243,13 @@ d01 = {'device_type': 'd01',
        'lpae': True,
        'fastboot': False}
 
-d02 = {'device_type': 'D02',
-		'templates': ['D02-arm64-kernel-ci-boot-template.json'],
+D02 = {'device_type': 'D02',
+		'templates': ['D02-arm64-kernel-ci-boot-template.json',
+					  'D02-arm64-kernel-ci-weekly-template.json'],
 		'defconfig_blacklist': ['arm64-allnoconfig',
 			'arm64-allmodconfig'],
 		'kernel_blacklist': [],
-       'nfs_blacklist': [],
+        'nfs_blacklist': [],
 		'lpae': False,
 		'be': False,
 		'fastboot': False}
@@ -629,7 +630,6 @@ device_map = {'bcm2835-rpi-b-plus.dtb': [bcm2835_rpi_b_plus],
               'sun7i-a20-cubietruck.dtb': [cubieboard3, cubieboard3_kvm],
               'sun7i-a20-bananapi.dtb': [sun7i_a20_bananapi],
               'hip04-d01.dtb': [d01],
-              'hip05-d02.dtb': [d02],
               'hisi-x5hd2-dkb.dtb': [hisi_x5hd2_dkb],
               'imx6q-wandboard.dtb': [imx6q_wandboard],
               'imx6q-sabrelite.dtb': [imx6q_sabrelite],
@@ -653,8 +653,9 @@ device_map = {'bcm2835-rpi-b-plus.dtb': [bcm2835_rpi_b_plus],
               'apq8016-sbc.dtb': [apq8016_sbc],
               'apm-mustang.dtb': [apm_mustang, apm_mustang_kvm],
               'juno.dtb': [juno, juno_kvm],
-              'fvp-base-gicv2-psci.dtb': [fvp_aemv8a],
+			  'fvp-base-gicv2-psci.dtb': [fvp_aemv8a],
               'hi6220-hikey.dtb': [hi6220_hikey],
+              'hip05-d02.dtb': [D02],
               'x86': [x86, minnowboard_max_E3825],
               'x86-kvm': [x86_kvm]}
 
@@ -701,6 +702,7 @@ def create_jobs(base_url, kernel, plans, platform_list, targets):
                         config = ConfigParser.ConfigParser()
                         try:
                             config.read(cwd + '/templates/' + plan + '/' + plan + '.ini')
+                            print 'BIG_ENDIAN is not supported on %s. Skipping JSON creation' % plan
                             test_suite = config.get(plan, 'suite')
                             test_set = config.get(plan, 'set')
                             test_desc = config.get(plan, 'description')
