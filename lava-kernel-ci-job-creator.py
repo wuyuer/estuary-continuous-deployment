@@ -244,10 +244,11 @@ d01 = {'device_type': 'd01',
        'fastboot': False}
 
 d02 = {'device_type': 'D02',
-		'templates': ['d02-arm64-kernel-ci-boot-template.json'],
+		'templates': ['D02-arm64-kernel-ci-boot-template.json'],
 		'defconfig_blacklist': ['arm64-allnoconfig',
 			'arm64-allmodconfig'],
 		'kernel_blacklist': [],
+       'nfs_blacklist': [],
 		'lpae': False,
 		'be': False,
 		'fastboot': False}
