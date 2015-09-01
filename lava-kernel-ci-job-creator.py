@@ -243,6 +243,15 @@ d01 = {'device_type': 'd01',
        'lpae': True,
        'fastboot': False}
 
+d02 = {'device_type': 'D02',
+		'templates': ['d02-arm64-kernel-ci-boot-template.json'],
+		'defconfig_blacklist': ['arm64-allnoconfig',
+			'arm64-allmodconfig'],
+		'kernel_blacklist': [],
+		'lpae': False,
+		'be': False,
+		'fastboot': False}
+
 imx6q_wandboard = {'device_type': 'imx6q-wandboard',
                    'templates': ['generic-arm-dtb-kernel-ci-boot-template.json',
                                  'generic-arm-dtb-kernel-ci-boot-nfs-template.json',
@@ -619,6 +628,7 @@ device_map = {'bcm2835-rpi-b-plus.dtb': [bcm2835_rpi_b_plus],
               'sun7i-a20-cubietruck.dtb': [cubieboard3, cubieboard3_kvm],
               'sun7i-a20-bananapi.dtb': [sun7i_a20_bananapi],
               'hip04-d01.dtb': [d01],
+              'hip05-d02.dtb': [d02],
               'hisi-x5hd2-dkb.dtb': [hisi_x5hd2_dkb],
               'imx6q-wandboard.dtb': [imx6q_wandboard],
               'imx6q-sabrelite.dtb': [imx6q_sabrelite],
