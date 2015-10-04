@@ -88,6 +88,10 @@
                 "testdef_repos": [
                     {
                         "git-repo": "http://git.linaro.org/qa/test-definitions.git",
+			"parameters": {
+                            "DeviceID": "/dev/sda2"
+                        },
+
                         "testdef": "ubuntu/fio-test.yaml"
                     }
                 ],
