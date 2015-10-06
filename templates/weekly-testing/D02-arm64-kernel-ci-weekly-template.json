@@ -16,7 +16,7 @@
                 "dtb": "{dtb_url}",
                 "kernel": "{kernel_url}",
                "bootloadertype": "ipxe",
-                "target_type": "ubuntu"					
+                "target_type": "ubuntu"
             }
         },
         {
@@ -52,6 +52,9 @@
 			"testdef_repos": [
 			  {
 				"git-repo": "git://git.linaro.org/qa/test-definitions.git",
+				"parameters": {
+					"SKIPFILE": "skipfile-lsk-juno"
+				},
 				"testdef": "ubuntu/ltp.yaml"
 			  }
 			],
