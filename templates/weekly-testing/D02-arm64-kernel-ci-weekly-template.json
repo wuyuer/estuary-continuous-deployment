@@ -113,30 +113,30 @@
                 "timeout": 172800
             }
         },
-		{
-		  "command": "lava_test_shell",
-		  "parameters": {
-			"testdef_repos": [
-			  {
-				"git-repo": "git://git.linaro.org/qa/test-definitions.git",
-				"testdef": "ubuntu/perf.yaml"
-			  }
-			],
-			"timeout": 172800
+	{
+	  "command": "lava_test_shell",
+	  "parameters": {
+		"testdef_repos": [
+		  {
+			"git-repo": "git://git.linaro.org/qa/test-definitions.git",
+			"testdef": "ubuntu/perf.yaml"
 		  }
-		},
-		{
-		  "command": "lava_test_shell",
-		  "parameters": {
-			"testdef_repos": [
-			  {
-				"git-repo": "git://git.linaro.org/qa/test-definitions.git",
-				"testdef": "ubuntu/smoke-tests-basic.yaml"
-			  }
-			],
-			"timeout": 172800
+		],
+		"timeout": 172800
+	  }
+	},
+	{
+	  "command": "lava_test_shell",
+	  "parameters": {
+		"testdef_repos": [
+		  {
+			"git-repo": "git://git.linaro.org/qa/test-definitions.git",
+			"testdef": "ubuntu/smoke-tests-basic.yaml"
 		  }
-		},
+		],
+		"timeout": 172800
+	  }
+	},
         {
             "command": "lava_test_shell",
             "parameters": {
@@ -153,6 +153,55 @@
                 "timeout": 172800
             }
         },
+
+	{
+		"command": "lava_test_shell",
+		"parameters": {
+			"testdef_repos": [
+			{
+				"git-repo": "https://github.com/joyxu/lava-test-definitions",
+				"parameters": {
+					"LEN": "16K",
+					"REMOTE_IP": "192.168.0.4"
+				},
+				"testdef": "ubuntu/iperf-client.yaml"
+			}
+			],
+				"timeout": 172800
+		}
+	},
+	{
+		"command": "lava_test_shell",
+		"parameters": {
+			"testdef_repos": [
+			{
+				"git-repo": "https://github.com/joyxu/lava-test-definitions",
+				"parameters": {
+					"ETH": "eth3",
+					"REMOTE_IP": "192.168.0.4"
+				},
+				"testdef": "ubuntu/netperf-client.yaml"
+			}
+			],
+				"timeout": 172800
+		}
+	},
+	{
+		"command": "lava_test_shell",
+		"parameters": {
+			"testdef_repos": [
+			{
+				"git-repo": "https://github.com/joyxu/lava-test-definitions",
+				"parameters": {
+					"ETH": "eth3",
+					"REMOTE_IP": "192.168.0.4"
+				},
+				"testdef": "ubuntu/replay-client.yaml"
+			}
+			],
+				"timeout": 172800
+		}
+	},
         {
             "command": "lava_test_shell",
             "parameters": {
