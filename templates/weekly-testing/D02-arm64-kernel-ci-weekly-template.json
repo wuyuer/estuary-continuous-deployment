@@ -144,7 +144,7 @@
                     {
                         "git-repo": "http://git.linaro.org/qa/test-definitions.git",
                         "parameters": {
-                            "GATEWAY": "192.168.0.1",
+                            "GATEWAY": "172.18.45.1",
                             "TEST_INTERFACE": "eth3"
                         },
                         "testdef": "ubuntu/network-tests-basic.yaml"
@@ -162,7 +162,7 @@
 				"git-repo": "https://github.com/joyxu/lava-test-definitions",
 				"parameters": {
 					"LEN": "16K",
-					"REMOTE_IP": "192.168.0.4"
+					"REMOTE_IP": "172.18.45.227"
 				},
 				"testdef": "ubuntu/iperf-client.yaml"
 			}
@@ -178,25 +178,9 @@
 				"git-repo": "https://github.com/joyxu/lava-test-definitions",
 				"parameters": {
 					"ETH": "eth3",
-					"REMOTE_IP": "192.168.0.4"
+					"REMOTE_IP": "172.18.45.227"
 				},
 				"testdef": "ubuntu/netperf-client.yaml"
-			}
-			],
-				"timeout": 172800
-		}
-	},
-	{
-		"command": "lava_test_shell",
-		"parameters": {
-			"testdef_repos": [
-			{
-				"git-repo": "https://github.com/joyxu/lava-test-definitions",
-				"parameters": {
-					"ETH": "eth3",
-					"REMOTE_IP": "192.168.0.4"
-				},
-				"testdef": "ubuntu/replay-client.yaml"
 			}
 			],
 				"timeout": 172800
@@ -243,7 +227,7 @@
         {
             "command": "submit_results",
             "parameters": {
-                "server": "http://labcamb@192.168.0.102:8080//RPC2/",
+                "server": "http://labcamb@172.18.45.36:8080//RPC2/",
                 "stream": "/anonymous/labcamb/"
             }
         }
