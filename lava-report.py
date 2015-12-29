@@ -1,13 +1,19 @@
 #!/usr/bin/python
 # <variable> = required
 # Usage ./lava-report.py <option> [json]
+import os
+import urlparse
+import xmlrpclib
+import json
 import argparse
 import time
 import subprocess
 import re
 import urllib2
 import requests
-from utils import *
+
+from lib import configuration
+from lib import utils
 
 log2html = 'https://git.linaro.org/people/kevin.hilman/build-scripts.git/blob_plain/HEAD:/log2html.py'
 
@@ -22,9 +28,12 @@ device_map = {'bcm2835-rpi-b-plus': ['bcm2835-rpi-b-plus', 'bcm'],
               'odroid-u2': ['exynos4412-odroidu3', 'exynos'],
               'odroid-x2': ['exynos4412-odroidx2', 'exynos'],
               'beaglebone-black': ['am335x-boneblack', 'omap2'],
+              'omap3-overo-tobi': ['omap3-overo-tobi', 'omap2'],
+              'omap3-overo-storm-tobi': ['omap3-overo-storm-tobi', 'omap2'],
               'beagle-xm': ['omap3-beagle-xm', 'omap2'],
               'panda-es': ['omap4-panda-es', 'omap2'],
               'panda': ['omap4-panda', 'omap2'],
+              'omap5-uevm' : ['omap5-uevm', 'omap2' ],
               'cubieboard2': ['sun7i-a20-cubieboard2', 'sunxi'],
               'cubieboard3': ['sun7i-a20-cubietruck', 'sunxi'],
               'cubieboard3-kvm-host': ['sun7i-a20-cubietruck-kvm-host', 'sunxi'],
@@ -32,6 +41,8 @@ device_map = {'bcm2835-rpi-b-plus': ['bcm2835-rpi-b-plus', 'bcm'],
               'sun7i-a20-bananapi': ['sun7i-a20-bananapi', 'sunxi'],
               'optimus-a80': ['sun9i-a80-optimus', 'sunxi'],
               'cubieboard4': ['sun9i-a80-cubieboard4', 'sunxi'],
+              'rk3288-rock2-square': ['rk3288-rock2-square', 'rockchip'],
+              'zx296702-ad1': ['zx296702-ad1', 'sunxi'],
               'hi3716cv200': ['hisi-x5hd2-dkb', 'hisi'],
               'd01': ['hip04-d01', 'hisi'],
               'imx6q-wandboard': ['imx6q-wandboard', 'imx'],
@@ -39,11 +50,13 @@ device_map = {'bcm2835-rpi-b-plus': ['bcm2835-rpi-b-plus', 'bcm'],
               'utilite-pro': ['imx6q-cm-fx6', 'imx'],
               'snowball': ['ste-snowball', 'u8500'],
               'ifc6540': ['qcom-apq8084-ifc6540', 'qcom'],
-              'ifc6410': ['qcom-apq8064-ifc6410','qcom'],
+              'ifc6410': ['qcom-apq8064-ifc6410', 'qcom'],
+              'highbank': ['highbank', 'highbank'],
               'sama53d': ['at91-sama5d3_xplained', 'at91'],
               'jetson-tk1': ['tegra124-jetson-tk1', 'tegra'],
               'tegra124-nyan-big': ['tegra124-nyan-big', 'tegra'],
               'parallella': ['zynq-parallella', 'zynq'],
+              'zynq-zc702': ['zynq-zc702', 'zynq'],
               'qemu-arm-cortex-a15': ['vexpress-v2p-ca15-tc1', 'vexpress'],
               'qemu-arm-cortex-a15-a7': ['vexpress-v2p-ca15_a7', 'vexpress'],
               'qemu-arm-cortex-a9': ['vexpress-v2p-ca9', 'vexpress'],
@@ -62,7 +75,10 @@ device_map = {'bcm2835-rpi-b-plus': ['bcm2835-rpi-b-plus', 'bcm'],
               'juno-kvm-uefi-guest': ['juno-kvm-uefi-guest', 'arm'],
               'rtsm_fvp_base-aemv8a': ['fvp-base-gicv2-psci', 'arm'],
               'hi6220-hikey': ['hi6220-hikey', 'hisi'],
+              'fsl-ls2085a-rdb': ['fsl-ls2080a-rdb', 'freescale'],
+              'fsl-ls2085a-simu': ['fsl-ls2080a-simu', 'freescale'],
               'minnowboard-max-E3825': ['minnowboard-max', None],
+              'x86-atom330': ['x86-atom330', None],
               'x86': ['x86', None],
               'kvm': ['x86-kvm', None]}
 
@@ -75,13 +91,13 @@ def download_log2html(url):
         print 'error fetching %s: %s' % (url, e)
         exit(1)
     script = response.read()
-    write_file(script, 'log2html.py', os.getcwd())
+    utils.write_file(script, 'log2html.py', os.getcwd())
 
 
 def parse_json(json):
-    jobs = load_json(json)
-    url = validate_input(jobs['username'], jobs['token'], jobs['server'])
-    connection = connect(url)
+    jobs = utils.load_json(json)
+    url = utils.validate_input(jobs['username'], jobs['token'], jobs['server'])
+    connection = utils.connect(url)
     duration = jobs['duration']
     # Remove unused data
     jobs.pop('duration')
@@ -109,14 +125,14 @@ def push(method, url, data, headers):
             print response.content
 
 
-def boot_report(args):
-    connection, jobs, duration =  parse_json(args.boot)
+def boot_report(config):
+    connection, jobs, duration =  parse_json(config.get("boot"))
     # TODO: Fix this when multi-lab sync is working
     #download_log2html(log2html)
     results_directory = os.getcwd() + '/results'
     results = {}
     dt_tests = False
-    mkdir(results_directory)
+    utils.mkdir(results_directory)
     for job_id in jobs:
         print 'Job ID: %s' % job_id
         # Init
@@ -224,11 +240,11 @@ def boot_report(args):
                         if test['test_case_id'] == 'test_kernel_boot_time':
                             kernel_boot_time = test['measurement']
                     bundle_attributes = bundle_data['test_runs'][-1]['attributes']
-            if in_bundle_attributes(bundle_attributes, 'kernel.defconfig'):
+            if utils.in_bundle_attributes(bundle_attributes, 'kernel.defconfig'):
                 print bundle_attributes['kernel.defconfig']
-            if in_bundle_attributes(bundle_attributes, 'target'):
+            if utils.in_bundle_attributes(bundle_attributes, 'target'):
                 board_instance = bundle_attributes['target']
-            if in_bundle_attributes(bundle_attributes, 'kernel.defconfig'):
+            if utils.in_bundle_attributes(bundle_attributes, 'kernel.defconfig'):
                 kernel_defconfig = bundle_attributes['kernel.defconfig']
                 defconfig_list = kernel_defconfig.split('-')
                 arch = defconfig_list[0]
@@ -238,30 +254,30 @@ def boot_report(args):
                 kernel_defconfig_base = ''.join(kernel_defconfig_full.split('+')[:1])
                 if kernel_defconfig_full == kernel_defconfig_base:
                     kernel_defconfig_full = None
-            if in_bundle_attributes(bundle_attributes, 'kernel.version'):
+            if utils.in_bundle_attributes(bundle_attributes, 'kernel.version'):
                 kernel_version = bundle_attributes['kernel.version']
-            if in_bundle_attributes(bundle_attributes, 'device.tree'):
+            if utils.in_bundle_attributes(bundle_attributes, 'device.tree'):
                 device_tree = bundle_attributes['device.tree']
-            if in_bundle_attributes(bundle_attributes, 'kernel.endian'):
+            if utils.in_bundle_attributes(bundle_attributes, 'kernel.endian'):
                 kernel_endian = bundle_attributes['kernel.endian']
-            if in_bundle_attributes(bundle_attributes, 'platform.fastboot'):
+            if utils.in_bundle_attributes(bundle_attributes, 'platform.fastboot'):
                 fastboot = bundle_attributes['platform.fastboot']
             if kernel_boot_time is None:
-                if in_bundle_attributes(bundle_attributes, 'kernel-boot-time'):
+                if utils.in_bundle_attributes(bundle_attributes, 'kernel-boot-time'):
                     kernel_boot_time = bundle_attributes['kernel-boot-time']
-            if in_bundle_attributes(bundle_attributes, 'kernel.tree'):
+            if utils.in_bundle_attributes(bundle_attributes, 'kernel.tree'):
                 kernel_tree = bundle_attributes['kernel.tree']
-            if in_bundle_attributes(bundle_attributes, 'kernel-addr'):
+            if utils.in_bundle_attributes(bundle_attributes, 'kernel-addr'):
                 kernel_addr = bundle_attributes['kernel-addr']
-            if in_bundle_attributes(bundle_attributes, 'initrd-addr'):
+            if utils.in_bundle_attributes(bundle_attributes, 'initrd-addr'):
                 initrd_addr = bundle_attributes['initrd-addr']
-            if in_bundle_attributes(bundle_attributes, 'dtb-addr'):
+            if utils.in_bundle_attributes(bundle_attributes, 'dtb-addr'):
                 dtb_addr = bundle_attributes['dtb-addr']
-            if in_bundle_attributes(bundle_attributes, 'dtb-append'):
+            if utils.in_bundle_attributes(bundle_attributes, 'dtb-append'):
                 dtb_append = bundle_attributes['dtb-append']
-            if in_bundle_attributes(bundle_attributes, 'boot_retries'):
+            if utils.in_bundle_attributes(bundle_attributes, 'boot_retries'):
                 boot_retries = int(bundle_attributes['boot_retries'])
-            if in_bundle_attributes(bundle_attributes, 'test.plan'):
+            if utils.in_bundle_attributes(bundle_attributes, 'test.plan'):
                 test_plan = bundle_attributes['test.plan']
 
         # Check if we found efi-rtc
@@ -277,6 +293,8 @@ def boot_report(args):
             else:
                 if device_tree == 'vexpress-v2p-ca15_a7.dtb':
                     platform_name = 'vexpress-v2p-ca15_a7'
+                elif device_tree == 'fsl-ls2080a-simu.dtb':
+                    platform_name = 'fsl-ls2080a-simu'
                 elif test_plan == 'boot-kvm' or test_plan == 'boot-kvm-uefi':
                     if device_tree == 'sun7i-a20-cubietruck.dtb':
                         if device_type == 'dynamic-vm':
@@ -318,12 +336,12 @@ def boot_report(args):
             print 'Creating boot log for %s' % platform_name
             log = 'boot-%s.txt' % platform_name
             html = 'boot-%s.html' % platform_name
-            if args.lab:
-                directory = os.path.join(results_directory, kernel_defconfig + '/' + args.lab)
+            if config.get("lab"):
+                directory = os.path.join(results_directory, kernel_defconfig + '/' + config.get("lab"))
             else:
                 directory = os.path.join(results_directory, kernel_defconfig)
-            ensure_dir(directory)
-            write_file(job_file, log, directory)
+            utils.ensure_dir(directory)
+            utils.write_file(job_file, log, directory)
             if kernel_boot_time is None:
                 kernel_boot_time = '0.0'
             if results.has_key(kernel_defconfig):
@@ -332,8 +350,8 @@ def boot_report(args):
                 results[kernel_defconfig] = [{'device_type': platform_name, 'dt_test_result': dt_test_result, 'dt_tests_passed': dt_tests_passed, 'dt_tests_failed': dt_tests_failed, 'kernel_boot_time': kernel_boot_time, 'result': result}]
             # Create JSON format boot metadata
             print 'Creating JSON format boot metadata'
-            if args.lab:
-                boot_meta['lab_name'] = args.lab
+            if config.get("lab"):
+                boot_meta['lab_name'] = config.get("lab")
             else:
                 boot_meta['lab_name'] = None
             if board_instance:
@@ -388,37 +406,37 @@ def boot_report(args):
                 boot_meta['kernel_image'] = 'bzImage'
             boot_meta['loadaddr'] = kernel_addr
             json_file = 'boot-%s.json' % platform_name
-            write_json(json_file, directory, boot_meta)
+            utils.write_json(json_file, directory, boot_meta)
             print 'Creating html version of boot log for %s' % platform_name
             cmd = 'python log2html.py %s' % os.path.join(directory, log)
             subprocess.check_output(cmd, shell=True)
-            if args.lab and args.api and args.token:
-                print 'Sending boot result to %s for %s' % (args.api, platform_name)
+            if config.get("lab") and config.get("api") and config.get("token"):
+                print 'Sending boot result to %s for %s' % (config.get("api"), platform_name)
                 headers = {
-                    'Authorization': args.token,
+                    'Authorization': config.get("token"),
                     'Content-Type': 'application/json'
                 }
-                api_url = urlparse.urljoin(args.api, '/boot')
+                api_url = urlparse.urljoin(config.get("api"), '/boot')
                 push('POST', api_url, data=json.dumps(boot_meta), headers=headers)
                 headers = {
-                    'Authorization': args.token,
+                    'Authorization': config.get("token"),
                 }
                 print 'Uploading text version of boot log'
                 with open(os.path.join(directory, log)) as lh:
                     data = lh.read()
-                api_url = urlparse.urljoin(args.api, '/upload/%s/%s/%s/%s/%s' % (kernel_tree,
+                api_url = urlparse.urljoin(config.get("api"), '/upload/%s/%s/%s/%s/%s' % (kernel_tree,
                                                                                  kernel_version,
                                                                                  kernel_defconfig,
-                                                                                 args.lab,
+                                                                                 config.get("lab"),
                                                                                  log))
                 push('PUT', api_url, data=data, headers=headers)
                 print 'Uploading html version of boot log'
                 with open(os.path.join(directory, html)) as lh:
                     data = lh.read()
-                api_url = urlparse.urljoin(args.api, '/upload/%s/%s/%s/%s/%s' % (kernel_tree,
+                api_url = urlparse.urljoin(config.get("api"), '/upload/%s/%s/%s/%s/%s' % (kernel_tree,
                                                                                  kernel_version,
                                                                                  kernel_defconfig,
-                                                                                 args.lab,
+                                                                                 config.get("lab"),
                                                                                  html))
                 push('PUT', api_url, data=data, headers=headers)
 
@@ -434,13 +452,13 @@ def boot_report(args):
                 else:
                     failed += 1
         total = passed + failed
-        if args.lab:
-            report_directory = os.path.join(results_directory, args.lab)
-            mkdir(report_directory)
+        if config.get("lab"):
+            report_directory = os.path.join(results_directory, config.get("lab"))
+            utils.mkdir(report_directory)
         else:
             report_directory = results_directory
         with open(os.path.join(report_directory, boot), 'a') as f:
-            f.write('To: %s\n' % args.email)
+            f.write('To: %s\n' % config.get("email"))
             f.write('From: bot@kernelci.org\n')
             f.write('Subject: %s boot: %s boots: %s passed, %s failed (%s)\n' % (kernel_tree,
                                                                                 str(total),
@@ -489,11 +507,11 @@ def boot_report(args):
                         f.write('    %s   %ss   boot-test: %s\n' % (result['device_type'],
                                                                     result['kernel_boot_time'],
                                                                     result['result']))
-                        if args.lab:
+                        if config.get("lab"):
                             f.write('    http://storage.kernelci.org/kernel-ci/%s/%s/%s/%s/boot-%s.html' % (kernel_tree,
                                                                                                             kernel_version,
                                                                                                             defconfig,
-                                                                                                            args.lab,
+                                                                                                            config.get("lab"),
                                                                                                             result['device_type']))
                         else:
                             f.write('    http://storage.kernelci.org/kernel-ci/%s/%s/%s/boot-%s.html' % (kernel_tree,
@@ -524,7 +542,7 @@ def boot_report(args):
                     failed += 1
         total = passed + failed
         with open(os.path.join(report_directory, dt_self_test), 'a') as f:
-            f.write('To: %s\n' % args.email)
+            f.write('To: %s\n' % config.get("email"))
             f.write('From: bot@kernelci.org\n')
             f.write('Subject: %s dt-runtime-unit-tests: %s boards tested: %s passed, %s failed (%s)\n' % (kernel_tree,
                                                                                                            str(total),
@@ -556,11 +574,11 @@ def boot_report(args):
                                                                                                     result['dt_tests_passed'],
                                                                                                     result['dt_tests_failed'],
                                                                                                     result['dt_test_result']))
-                        if args.lab:
+                        if config.get("lab"):
                             f.write('    http://storage.kernelci.org/kernel-ci/%s/%s/%s/%s/boot-%s.html' % (kernel_tree,
                                                                                                         kernel_version,
                                                                                                         defconfig,
-                                                                                                        args.lab,
+                                                                                                        config.get("lab"),
                                                                                                         result['device_type']))
                         else:
                             f.write('    http://storage.kernelci.org/kernel-ci/%s/%s/%s/boot-%s.html' % (kernel_tree,
@@ -585,8 +603,8 @@ def boot_report(args):
                                                                                                     result['dt_test_result']))
 
     # sendmail
-    if args.email:
-        print 'Sending e-mail summary to %s' % args.email
+    if config.get("email"):
+        print 'Sending e-mail summary to %s' % config.get("email")
         if os.path.exists(report_directory):
             cmd = 'cat %s | sendmail -t' % os.path.join(report_directory, boot)
             subprocess.check_output(cmd, shell=True)
@@ -596,16 +614,20 @@ def boot_report(args):
                 subprocess.check_output(cmd, shell=True)
 
 def main(args):
-    if args.boot:
-        boot_report(args)
+    config = configuration.get_config(args)
+
+    if config.get("boot"):
+        boot_report(config)
     exit(0)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
+    parser.add_argument("--config", help="configuration for the LAVA server")
+    parser.add_argument("--section", default="default", help="section in the LAVA config file")
     parser.add_argument("--boot", help="creates a kernel-ci boot report from a given json file")
     parser.add_argument("--lab", help="lab id")
     parser.add_argument("--api", help="api url")
     parser.add_argument("--token", help="authentication token")
     parser.add_argument("--email", help="email address to send report to")
-    args = parser.parse_args()
+    args = vars(parser.parse_args())
     main(args)
