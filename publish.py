@@ -31,14 +31,11 @@ def publish( git_describe=None, directory=None, job=None):
     count = 1
     artifacts = []
     for root, dirs, files in os.walk(directory):
-        if count == 1:
-            top_dir = root
         for file_name in files:
             name = file_name
-            if root != top_dir:
-                # get the relative subdir path
-                subdir = root[len(top_dir) + 1:]
-                name = os.path.join(subdir, file_name)
+            # get the relative subdir path
+            subdir = os.path.relpath(root, directory)
+            name = os.path.join(subdir, file_name)
             artifacts.append(('file' + str(count), 
                 (name, open(os.path.join(root, file_name), 'rb'))))
             count += 1
