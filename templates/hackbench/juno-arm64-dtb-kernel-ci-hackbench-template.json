@@ -29,7 +29,7 @@
             "parameters": {
                 "testdef_repos": [
                     {
-                        "git-repo": "git://git.linaro.org/qa/test-definitions.git",
+                        "git-repo": "http://github.com/wuyuer/lava-test-cases.git",
                         "parameters": {
                             "RTIME": "1800"
                         },
