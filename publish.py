@@ -19,9 +19,9 @@ if not os.environ.has_key('TREE_NAME'):
     os.environ['TREE_NAME'] = 'master'
 job = os.environ["TREE_NAME"]
 
-def publish( git_describe=None, directory=None, job=None):
+def publish( platform='d02', directory=None, job=None):
     global url
-    publish_path = os.path.join(job, git_describe, directory)
+    publish_path = os.path.join(job, directory, platform)
     headers = {
             'Authorization': token
             }
@@ -58,15 +58,15 @@ if __name__ == "__main__":
     git_des = None
     direc = None
     try:
-        opts, args = getopt.getopt(sys.argv[1:], "d:c:j:")
+        opts, args = getopt.getopt(sys.argv[1:], "p:d:j:")
     except getopt.GetoptError as err:
         print str(err)
         sys.exit(2)
     for option, value in opts:
+        if option == '-p':
+            platform = value
         if option == '-d':
-            git_des = value
-        if option == '-c':
             direc = value
         if option == '-j':
             job = value
-    publish(git_describe=git_des, directory=direc, job=job)
+    publish(platform=platform, directory=direc, job=job)
