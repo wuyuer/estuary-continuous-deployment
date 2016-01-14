@@ -19,9 +19,21 @@ if not os.environ.has_key('TREE_NAME'):
     os.environ['TREE_NAME'] = 'master'
 job = os.environ["TREE_NAME"]
 
-def publish( platform='d02', directory=None, job=None):
+def get_arch(platform='D02'):
+    arch = ''
+    if platform == 'D02' or platform == 'D03':
+        arch = 'arm64'
+    elif platform == 'D01':
+        arch = 'arm'
+    else:
+        arch = 'x86'
+    return arch
+
+def publish( platform='D02', directory=None, job=None):
     global url
-    publish_path = os.path.join(job, directory, platform)
+    publish_path = os.path.join(job, directory, platform.lower() + '-' + \
+            get_arch(platform))
+    print publish_path
     headers = {
             'Authorization': token
             }
@@ -30,6 +42,9 @@ def publish( platform='d02', directory=None, job=None):
             }
     count = 1
     artifacts = []
+    if not os.path.exists(directory):
+        print 'not valid directory for upload'
+        return 
     for root, dirs, files in os.walk(directory):
         for file_name in files:
             name = file_name
