@@ -7,6 +7,7 @@ import os
 import shutil
 import argparse
 import ConfigParser
+import pdb
 
 from lib import configuration
 
@@ -310,6 +311,21 @@ hi6220_hikey = {'device_type': 'hi6220-hikey',
                'nfs_blacklist': [],
                'lpae': False,
                'fastboot': False}
+
+dummy_ssh = {'templates': [ 'boot.json',
+                            'device_read_perf.json',
+                            'iperf_client.json',
+                            'ltp.json',
+                            'perf.json',
+                            'cyclictest.json',
+                            'exec_latency.json',
+                            'kselftest-net.json',
+                            'netperf.json',
+                            'smoke_basic_test.json',
+                            'fio.json',
+                            'lkp.json',
+                            'network_tests_basic.json',
+                            'sysbench.json'],}
 
 imx6q_wandboard = {'device_type': 'imx6q-wandboard',
                    'templates': ['generic-arm-dtb-kernel-ci-boot-template.json',
@@ -821,11 +837,10 @@ def setup_job_dir(directory):
     print 'Setting up JSON output directory at: jobs/'
     if not os.path.exists(directory):
         os.makedirs(directory)
-    else:
-        shutil.rmtree(directory)
-        os.makedirs(directory)
+    #else:
+    #    shutil.rmtree(directory)
+    #    os.makedirs(directory)
     print 'Done setting up JSON output directory'
-
 
 def create_jobs(base_url, kernel, plans, platform_list, targets, priority):
     print 'Creating JSON Job Files...'
@@ -883,12 +898,18 @@ def create_jobs(base_url, kernel, plans, platform_list, targets, priority):
                     print '%s has been blacklisted. Skipping JSON creation' % kernel_version
                 elif targets is not None and device_type not in targets:
                     print '%s device type has been omitted. Skipping JSON creation.' % device_type
-                elif not any([x for x in defconfigs if x == defconfig]) and plan != 'boot':
-                    print '%s has been omitted from the %s test plan. Skipping JSON creation.' % (defconfig, plan)
+                #elif not any([x for x in defconfigs if x == defconfig]) and plan != 'boot':
+                #    print '%s has been omitted from the %s test plan. Skipping JSON creation.' % (defconfig, plan)
                 else:
-                    for template in device_templates:
+                    total_templates = [ x for x in device_templates]
+                    for json in dummy_ssh['templates']:
+                        total_templates.append(json)
+                    for template in total_templates:
                         job_name = tree + '-' + kernel_version + '-' + defconfig[:100] + '-' + platform_name + '-' + device_type + '-' + plan
-                        job_json = cwd + '/jobs/' + job_name + '.json'
+                        if template in dummy_ssh['templates']:
+                            job_json = cwd + '/jobs/' + job_name + '-' + template
+                        else:
+                            job_json = cwd + '/jobs/' + job_name + '.json'
                         template_file = cwd + '/templates/' + plan + '/' + str(template)
                         if os.path.exists(template_file):
                             with open(job_json, 'wt') as fout:
@@ -897,7 +918,8 @@ def create_jobs(base_url, kernel, plans, platform_list, targets, priority):
                                         tmp = line.replace('{dtb_url}', platform)
                                         tmp = tmp.replace('{kernel_url}', kernel)
                                         tmp = tmp.replace('{device_type}', device_type)
-                                        tmp = tmp.replace('{job_name}', job_name)
+                                        tmp = tmp.replace('{job_name}',\
+                                                job_json.split("/")[-1].split(".json")[0])
                                         tmp = tmp.replace('{image_type}', image_type)
                                         tmp = tmp.replace('{image_url}', image_url)
                                         modules_url = image_url + 'modules.tar.xz'
@@ -944,7 +966,7 @@ def create_jobs(base_url, kernel, plans, platform_list, targets, priority):
                                         else:
                                             tmp = tmp.replace('{priority}', 'high')
                                         fout.write(tmp)
-                            print 'JSON Job created: jobs/%s' % job_name
+                            print 'JSON Job created: jobs/%s' % job_json.split('/')[-1]
 
 
 def walk_url(url, plans=None, arch=None, targets=None, priority=None):
@@ -977,7 +999,8 @@ def walk_url(url, plans=None, arch=None, targets=None, priority=None):
                 # qemu-arm,legacy
                 if 'arm-versatile_defconfig' in url:
                     legacy_platform_list.append(url + 'qemu-arm-legacy')
-            if 'Image' in name and 'arm64' in url:
+            #if 'Image' in name and 'arm64' in url:
+            if 'Image' in name:
                 kernel = url + name
                 base_url = url
                 # qemu-aarch64,legacy

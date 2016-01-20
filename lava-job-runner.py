@@ -84,6 +84,9 @@ def submit_jobs(connection, server, bundle_stream=None):
                 if bundle_stream is not None:
                     job_data = re.sub('LAVA_SERVER', server, job_data)
                     job_data = re.sub('BUNDLE_STREAM', bundle_stream, job_data)
+                    job_info = json.loads(job_data)
+                    json.dump(job_info, open(job, 'w'),
+                            sort_keys=True, indent=4, separators=(',', ':'))
             job_info = json.loads(job_data)
             # Check if request device(s) are available
             if 'target' in job_info:
