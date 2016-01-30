@@ -15,7 +15,7 @@
             "parameters": {
                 "dtb": "{dtb_url}",
                 "kernel": "{kernel_url}",
-               "bootloadertype": "ipxe",
+                "bootloadertype": "ipxe",
                 "target_type": "ubuntu"					
             }
         },

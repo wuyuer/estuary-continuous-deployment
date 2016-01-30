@@ -13,7 +13,7 @@ import requests
 from urlparse import urljoin
 
 url = "http://192.168.1.108:8888/"
-token = "76e91b9b-d85e-4c2b-a102-fc6bdb8efe86"
+token = "d61fef42-ec72-4251-a10a-ae61da4a0745"
 
 if not os.environ.has_key('TREE_NAME'):
     os.environ['TREE_NAME'] = 'master'

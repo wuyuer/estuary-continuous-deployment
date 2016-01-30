@@ -236,21 +236,6 @@ x86_atom330 = {'device_type': 'x86-atom330',
                          'lpae': False,
                          'fastboot': False}
 
-minnowboard_max_E3825 = {'device_type': 'minnowboard-max-E3825',
-                         'templates': ['generic-x86-kernel-ci-boot-template.json',
-                                       'generic-x86-kernel-ci-kselftest-template.json',
-                                       'generic-x86-kernel-ci-hackbench-template.json'],
-                         'defconfig_blacklist': ['x86-i386_defconfig',
-                                                 'x86-allnoconfig',
-                                                 'x86-allmodconfig',
-                                                 'x86-allmodconfig+CONFIG_OF=n',
-                                                 'x86-tinyconfig',
-                                                 'x86-kvm_guest.config'],
-                         'kernel_blacklist': [],
-                         'nfs_blacklist': [],
-                         'lpae': False,
-                         'fastboot': False}
-
 x86_kvm = {'device_type': 'kvm',
            'templates': ['generic-x86-kernel-ci-boot-template.json',
                          'generic-x86-kernel-ci-kselftest-template.json',
@@ -282,7 +267,7 @@ device_map = {'omap4-panda-es.dtb': [panda_es],
               'qemu-aarch64-legacy': [qemu_aarch64],
               'juno.dtb': [juno, juno_kvm],
               'hi6220-hikey.dtb': [hi6220_hikey],
-              'x86': [x86, minnowboard_max_E3825, x86_atom330],
+              'x86': [x86, x86_atom330],
               'x86-kvm': [x86_kvm]}
 
 parse_re = re.compile('href="([^./"?][^"?]*)"')
@@ -447,7 +432,8 @@ def walk_url(url, plans=None, arch=None, targets=None, priority=None):
                 base_url = url
                 platform_list.append(url + 'x86')
                 platform_list.append(url + 'x86-kvm')
-            if 'zImage' in name and 'arm' in url:
+            #if 'zImage' in name and 'arm' in url:
+            if 'zImage' in name:
                 kernel = url + name
                 base_url = url
                 # qemu-arm,legacy

@@ -483,11 +483,24 @@ def boot_report(config):
 
     if results and directory:
         list_dirs = os.walk(directory)
-        summary = 'summary.txt'
-        with open(os.path.join(report_directory, summary), 'a') as sf:
-            for root, dirs, files in list_dirs:
-                for filename in files:
-                    if filename.endswith('.txt'):
+        d01_summary = 'd01_summary.txt'
+        d02_summary = 'd02_summary.txt'
+        d03_summary = 'd03_summary.txt'
+        other_summary = 'summary.txt'
+        summary = other_summary
+
+        for root, dirs, files in list_dirs:
+            for filename in files:
+                if filename.endswith('.txt'):
+                    if re.search('d02', root):
+                        summary = d02_summary
+                    elif re.search('d01', root):
+                        summary = d01_summary
+                    elif re.search('d03', root):
+                        summary = d03_summary
+                    else:
+                        summary = other_summary
+                    with open(os.path.join(report_directory, summary), 'a') as sf:
                         with open(os.path.join(root, filename)) as fp:
                             write_flag = 0
                             for line in fp:
