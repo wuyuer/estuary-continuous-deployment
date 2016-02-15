@@ -16,7 +16,6 @@ import time
 import re
 import argparse
 import httplib
-import pdb
 
 from lib import utils
 from lib import configuration
@@ -27,7 +26,6 @@ def create_jobs(connection, server, bundle_stream=None):
     
     types_devices_map = gather_devices_types_map(connection)
     
-    pdb.set_trace()
     for job in job_map:
         with open(job, 'rb') as stream:
             job_data = stream.read()
@@ -90,5 +88,4 @@ if __name__ == '__main__':
     parser.add_argument("--server", help="server url for LAVA server")
     parser.add_argument("--stream", help="bundle stream for LAVA server")
     args = vars(parser.parse_args())
-    pdb.set_trace()
     main(args)
