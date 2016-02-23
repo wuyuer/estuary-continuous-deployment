@@ -14,7 +14,6 @@ import requests
 
 from lib import configuration
 from lib import utils
-import pdb
 
 #log2html = 'https://git.linaro.org/people/kevin.hilman/build-scripts.git/blob_plain/HEAD:/log2html.py'
 
@@ -27,7 +26,7 @@ device_map = {'arndale': ['exynos5250-arndale', 'exynos'],
               'hi3716cv200': ['hisi-x5hd2-dkb', 'hisi'],
               'd01': ['hip04-d01', 'hisi'],
               'd02': ['hip05-d02', 'hisi'],
-              'dummy_ssh': ['hip05-d02', 'hisi'],
+              #'dummy_ssh': ['hip05-d02', 'hisi'],
               'hi6220-hikey': ['hi6220-hikey', 'hisi'],
               'qemu-arm-cortex-a15': ['vexpress-v2p-ca15-tc1', 'vexpress'],
               'qemu-arm-cortex-a15-a7': ['vexpress-v2p-ca15_a7', 'vexpress'],
@@ -86,16 +85,23 @@ def push(method, url, data, headers):
             print response.content
 
 # add by wuyanjun
-def get_board_type(filename):
-    if re.search('d02', filename):
-        board = 'd02'
-    elif re.search('d01', filename):
-        board = 'd01'
-    elif re.search('d03', filename):
-        board = 'd03'
-    else: 
-        board = 'dummy-ssh'
-    return board
+def get_board_type(directory, filename):
+    strinfo = re.compile('.txt')
+    json_name = strinfo.sub('.json',filename)
+    test_info = utils.load_json(os.path.join(directory, json_name))
+    if 'board' in test_info.keys():
+        # for dummy-ssh board
+        if re.search('ssh', test_info['board_instance']):
+            board_type = test_info['board_instance'].split('_')[0]
+        else:
+            board_verify = test_info['board'].split(',')[0]
+            for key in board_map.keys():
+                if board_map[key][0] == board_verify:
+                    board_type = board_verify
+                else:
+                    board_type = ''
+        return board_type
+    return ''
 
 # add by wuyanjun
 def get_board_instance(directory, filename):
@@ -107,6 +113,77 @@ def get_board_instance(directory, filename):
             board_instance = test_info['board_instance']
             return board_instance
     return ''
+
+# add by wuyanjun
+# we use the plans all by 'UPPER CASE'
+def get_plans(directory, filename):
+    m = re.findall('[A-Z]+_?[A-Z]*', filename)
+    if m:
+        root_dir = directory
+        while '.git' not in os.listdir(root_dir):
+            root_dir = os.path.join(root_dir, os.path.pardir)
+        print root_dir
+        root_dir = os.path.abspath(root_dir)
+        for item in m:
+            for root, dirs, files in os.walk(os.path.join(root_dir, "templates")):
+                for dir_item in dirs:
+                    if dir_item == item:
+                       return item
+    return ''
+
+# add by wuyanjun
+# parser the test result
+def parser_and_get_result(results, directory, report_directory):
+    if results and directory:
+        list_dirs = os.walk(directory)
+
+        for root, dirs, files in list_dirs:
+            for filename in files:
+                if filename.endswith('.txt'):
+                    board_type = get_board_type(directory, filename)
+                    plan = get_plans(report_directory, filename)
+                    if board_type and plan:
+                        summary = board_type + '_' + plan + '_summary.txt'
+                    elif board_type:
+                        summary = board_type + '_summary.txt'
+                    elif plan:
+                        summary = plan + '_summary.txt'
+                    else:
+                        summary = 'summary.txt'
+
+                    with open(os.path.join(report_directory, summary), 'a') as sf:
+                        with open(os.path.join(root, filename)) as fp:
+                            write_flag = 0
+                            for line in fp:
+                                if write_flag == 1:
+                                    sf.write(line)
+                                    continue
+                                if re.search('=======', line):
+                                    write_flag = 1
+                                    sf.write(line)
+                            sf.write('\n')
+
+# add by wuyanjun
+# get the ip address of boards for the application jobs
+def get_ip_board_mapping(results, directory, report_directory):
+    if results and directory:
+        list_dirs = os.walk(directory)
+        ip_address = 'device_ip_type.txt'
+        ip_address_path = os.path.join(report_directory, ip_address)
+        if os.path.exists(ip_address_path):
+            os.remove(ip_address_path)
+        for root, dirs, files in list_dirs:
+            for filename in files:
+                if filename.endswith('.txt'):
+                    with open(ip_address_path, 'a') as sf:
+                        with open(os.path.join(root, filename)) as fp:
+                            mult_lines = fp.read()
+                            match = re.findall('eth.*?(\d+\.\d+\.\d+\.\d+)', mult_lines)
+                            if match:
+                                board_type = get_board_type(root, filename)
+                                board_instance = get_board_instance(root, filename)
+                                sf.write(board_type + '\t' + board_instance +
+                                    '\t' + match[-1] + '\n' )
 
 def boot_report(config):
     connection, jobs, duration =  parse_json(config.get("boot"))
@@ -367,38 +444,38 @@ def boot_report(config):
             boot_meta['loadaddr'] = kernel_addr
             json_file = 'boot-%s.json' % (platform_name + job_name)
             utils.write_json(json_file, directory, boot_meta)
-            print 'Creating html version of boot log for %s' % platform_name
-            cmd = 'python log2html.py %s' % os.path.join(directory, log)
-            subprocess.check_output(cmd, shell=True)
-            if config.get("lab") and config.get("api") and config.get("token"):
-                print 'Sending boot result to %s for %s' % (config.get("api"), platform_name)
-                headers = {
-                    'Authorization': config.get("token"),
-                    'Content-Type': 'application/json'
-                }
-                api_url = urlparse.urljoin(config.get("api"), '/boot')
-                push('POST', api_url, data=json.dumps(boot_meta), headers=headers)
-                headers = {
-                    'Authorization': config.get("token"),
-                }
-                print 'Uploading text version of boot log'
-                with open(os.path.join(directory, log)) as lh:
-                    data = lh.read()
-                api_url = urlparse.urljoin(config.get("api"), '/upload/%s/%s/%s/%s/%s' % (kernel_tree,
-                                                                                 kernel_version,
-                                                                                 kernel_defconfig,
-                                                                                 config.get("lab"),
-                                                                                 log))
-                push('PUT', api_url, data=data, headers=headers)
-                print 'Uploading html version of boot log'
-                with open(os.path.join(directory, html)) as lh:
-                    data = lh.read()
-                api_url = urlparse.urljoin(config.get("api"), '/upload/%s/%s/%s/%s/%s' % (kernel_tree,
-                                                                                 kernel_version,
-                                                                                 kernel_defconfig,
-                                                                                 config.get("lab"),
-                                                                                 html))
-                push('PUT', api_url, data=data, headers=headers)
+            #print 'Creating html version of boot log for %s' % platform_name
+            #cmd = 'python log2html.py %s' % os.path.join(directory, log)
+            #subprocess.check_output(cmd, shell=True)
+            #if config.get("lab") and config.get("api") and config.get("token"):
+            #    print 'Sending boot result to %s for %s' % (config.get("api"), platform_name)
+            #    headers = {
+            #        'Authorization': config.get("token"),
+            #        'Content-Type': 'application/json'
+            #    }
+            #    api_url = urlparse.urljoin(config.get("api"), '/boot')
+            #    push('POST', api_url, data=json.dumps(boot_meta), headers=headers)
+            #    headers = {
+            #        'Authorization': config.get("token"),
+            #    }
+            #    print 'Uploading text version of boot log'
+            #    with open(os.path.join(directory, log)) as lh:
+            #        data = lh.read()
+            #    api_url = urlparse.urljoin(config.get("api"), '/upload/%s/%s/%s/%s/%s' % (kernel_tree,
+            #                                                                     kernel_version,
+            #                                                                     kernel_defconfig,
+            #                                                                     config.get("lab"),
+            #                                                                     log))
+            #    push('PUT', api_url, data=data, headers=headers)
+            #    print 'Uploading html version of boot log'
+            #    with open(os.path.join(directory, html)) as lh:
+            #        data = lh.read()
+            #    api_url = urlparse.urljoin(config.get("api"), '/upload/%s/%s/%s/%s/%s' % (kernel_tree,
+            #                                                                     kernel_version,
+            #                                                                     kernel_defconfig,
+            #                                                                     config.get("lab"),
+            #                                                                     html))
+            #    push('PUT', api_url, data=data, headers=headers)
 
     if results and kernel_tree and kernel_version:
         print 'Creating boot summary for %s' % kernel_version
@@ -491,56 +568,8 @@ def boot_report(config):
                     f.write('    %s   %s   %ss   boot-test: %s\n' %
                             (result['device_type'], result['device_name'], result['kernel_boot_time'], result['result']))
     # add by wuyanjun
-    if results and directory:
-        list_dirs = os.walk(directory)
-        d01_summary = 'd01_summary.txt'
-        d02_summary = 'd02_summary.txt'
-        d03_summary = 'd03_summary.txt'
-        other_summary = 'summary.txt'
-        summary = other_summary
-
-        for root, dirs, files in list_dirs:
-            for filename in files:
-                if filename.endswith('.txt'):
-                    if re.search('d02', filename):
-                        summary = d02_summary
-                    elif re.search('d01', filename):
-                        summary = d01_summary
-                    elif re.search('d03', filename):
-                        summary = d03_summary
-                    else:
-                        summary = other_summary
-                    with open(os.path.join(report_directory, summary), 'a') as sf:
-                        with open(os.path.join(root, filename)) as fp:
-                            write_flag = 0
-                            for line in fp:
-                                if write_flag == 1:
-                                    sf.write(line)
-                                    continue
-                                if re.search('=======', line):
-                                    write_flag = 1
-                                    sf.write(line)
-                            sf.write('\n')
-    # add by wuyanjun
-    # get the ip address and the device type
-    if results and directory:
-        list_dirs = os.walk(directory)
-        ip_address = 'device_ip_type.txt'
-        ip_address_path = os.path.join(report_directory, ip_address)
-        if os.path.exists(ip_address_path):
-            os.remove(ip_address_path)
-        for root, dirs, files in list_dirs:
-            for filename in files:
-                if filename.endswith('.txt'):
-                    with open(ip_address_path, 'a') as sf:
-                        with open(os.path.join(root, filename)) as fp:
-                            mult_lines = fp.read()
-                            match = re.findall('eth.*?(\d+\.\d+\.\d+\.\d+)', mult_lines)
-                            if match:
-                                board_type = get_board_type(filename)
-                                board_instance = get_board_instance(root, filename)
-                                sf.write(board_type + '\t' + board_instance +
-                                    '\t' + match[-1] + '\n' )
+    parser_and_get_result(results, directory, report_directory)
+    get_ip_board_mapping(results, directory, report_directory)
 
     # dt-self-test
     if results and kernel_tree and kernel_version and dt_tests:
