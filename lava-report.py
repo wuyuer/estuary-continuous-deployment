@@ -95,8 +95,8 @@ def get_board_type(directory, filename):
             board_type = test_info['board_instance'].split('_')[0]
         else:
             board_verify = test_info['board'].split(',')[0]
-            for key in board_map.keys():
-                if board_map[key][0] == board_verify:
+            for key in device_map.keys():
+                if device_map[key][0] == board_verify:
                     board_type = board_verify
                 else:
                     board_type = ''
