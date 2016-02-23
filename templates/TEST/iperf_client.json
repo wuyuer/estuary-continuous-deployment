@@ -1,44 +1,38 @@
 {
     "actions": [
-        {
-            "command": "deploy_linaro_kernel",
+        {   
+            "command": "dummy_deploy",
             "metadata": {
                 "image.type": "{image_type}",
                 "image.url": "{image_url}",
                 "kernel.tree": "{tree}",
                 "kernel.version": "{kernel_version}",
-                "device.tree": "{device_tree}",
                 "kernel.endian": "{endian}",
                 "kernel.defconfig": "{defconfig}",
                 "platform.fastboot": "{fastboot}",
-                "test.plan": "{test_plan}",
-                "test.suite": "{test_suite}",
-                "test.set": "{test_set}",
-                "test.desc": "{test_desc}",
-                "test.type": "{test_type}"
+                "test.plan": "{test_plan}"
             },
             "parameters": {
-                "dtb": "{dtb_url}",
-                "kernel": "{kernel_url}",
-                "overlays": ["{modules_url}"],
-                "nfsrootfs": "http://releases.linaro.org/15.02/openembedded/images/lamp-armv7a/linaro-image-lamp-genericarmv7a-20150222-322.rootfs.tar.gz"
-            }
+                "target_type": "ubuntu"
+            }   
         },
         {
             "command": "lava_test_shell",
             "parameters": {
                 "testdef_repos": [
                     {
-                        "git-repo": "https://github.com/wuyuer/lava-test-cases.git",
+                        "git-repo": "https://github.com/joyxu/lava-test-definitions",
                         "parameters": {
-                            "TST_CMDFILES": "syscalls"
+                            "LEN": "16K",
+                            "REMOTE_IP": "192.168.1.106"
                         },
-                        "testdef": "openembedded/ltp.yaml"
+                        "testdef": "ubuntu/iperf-client.yaml"
                     }
-                ],
-                "timeout": 3600
+                    ],
+                    "timeout": 172800
             }
         },
+        
         {
             "command": "submit_results",
             "parameters": {
@@ -50,6 +44,6 @@
     "device_type": "{device_type}",
     "job_name": "{job_name}",
     "logging_level": "DEBUG",
-    "priority": "{priority}",
-    "timeout": 3601
+    "priority": "high",
+    "timeout": 172800
 }

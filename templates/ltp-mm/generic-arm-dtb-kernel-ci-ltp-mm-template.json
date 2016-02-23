@@ -29,7 +29,7 @@
             "parameters": {
                 "testdef_repos": [
                     {
-                        "git-repo": "http://github.com/wuyuer/lava-test-cases.git",
+                        "git-repo": "https://github.com/wuyuer/lava-test-cases.git",
                         "parameters": {
                             "TST_CMDFILES": "mm"
                         },

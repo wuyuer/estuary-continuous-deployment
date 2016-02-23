@@ -14,6 +14,7 @@ import requests
 
 from lib import configuration
 from lib import utils
+import pdb
 
 #log2html = 'https://git.linaro.org/people/kevin.hilman/build-scripts.git/blob_plain/HEAD:/log2html.py'
 
@@ -39,6 +40,7 @@ device_map = {'arndale': ['exynos5250-arndale', 'exynos'],
               'juno-kvm-uefi-host': ['juno-kvm-uefi-host', 'arm'],
               'juno-kvm-uefi-guest': ['juno-kvm-uefi-guest', 'arm'],
               'x86': ['x86', None],
+              'dummy-ssh': ['dummy-ssh', None],
               'kvm': ['x86-kvm', None]}
 
 
@@ -83,6 +85,28 @@ def push(method, url, data, headers):
             time.sleep(10)
             print response.content
 
+# add by wuyanjun
+def get_board_type(filename):
+    if re.search('d02', filename):
+        board = 'd02'
+    elif re.search('d01', filename):
+        board = 'd01'
+    elif re.search('d03', filename):
+        board = 'd03'
+    else: 
+        board = 'dummy-ssh'
+    return board
+
+# add by wuyanjun
+def get_board_instance(directory, filename):
+    strinfo = re.compile('.txt')
+    json_name = strinfo.sub('.json',filename)
+    #with open(os.path.join(directory, json_name), "r") as lines:
+    test_info = utils.load_json(os.path.join(directory, json_name))
+    if 'board_instance' in test_info.keys():
+            board_instance = test_info['board_instance']
+            return board_instance
+    return ''
 
 def boot_report(config):
     connection, jobs, duration =  parse_json(config.get("boot"))
@@ -256,21 +280,7 @@ def boot_report(config):
             if ( 'arm' == arch or 'arm64' == arch ) and device_tree is None:
                 platform_name = device_map[device_type][0] + ',legacy'
             else:
-                if test_plan == 'boot-kvm' or test_plan == 'boot-kvm-uefi':
-                    if device_tree == 'juno.dtb':
-                        if device_type == 'dynamic-vm':
-                            if test_plan == 'boot-kvm-uefi':
-                                device_type = 'juno-kvm-uefi-guest'
-                            else:
-                                device_type = 'juno-kvm-guest'
-                            platform_name = device_map[device_type][0]
-                        else:
-                            if test_plan == 'boot-kvm-uefi':
-                                device_type = 'juno-kvm-uefi-host'
-                            else:
-                                device_type = 'juno-kvm-host'
-                            platform_name = device_map[device_type][0]
-                elif test_plan == 'boot-nfs' or test_plan == 'boot-nfs-mp':
+                if test_plan == 'boot-nfs' or test_plan == 'boot-nfs-mp':
                     platform_name = device_map[device_type][0] + '_rootfs:nfs'
                 else:
                     platform_name = device_map[device_type][0]
@@ -480,7 +490,7 @@ def boot_report(config):
                 for result in results_list:
                     f.write('    %s   %s   %ss   boot-test: %s\n' %
                             (result['device_type'], result['device_name'], result['kernel_boot_time'], result['result']))
-
+    # add by wuyanjun
     if results and directory:
         list_dirs = os.walk(directory)
         d01_summary = 'd01_summary.txt'
@@ -492,11 +502,11 @@ def boot_report(config):
         for root, dirs, files in list_dirs:
             for filename in files:
                 if filename.endswith('.txt'):
-                    if re.search('d02', root):
+                    if re.search('d02', filename):
                         summary = d02_summary
-                    elif re.search('d01', root):
+                    elif re.search('d01', filename):
                         summary = d01_summary
-                    elif re.search('d03', root):
+                    elif re.search('d03', filename):
                         summary = d03_summary
                     else:
                         summary = other_summary
@@ -511,6 +521,26 @@ def boot_report(config):
                                     write_flag = 1
                                     sf.write(line)
                             sf.write('\n')
+    # add by wuyanjun
+    # get the ip address and the device type
+    if results and directory:
+        list_dirs = os.walk(directory)
+        ip_address = 'device_ip_type.txt'
+        ip_address_path = os.path.join(report_directory, ip_address)
+        if os.path.exists(ip_address_path):
+            os.remove(ip_address_path)
+        for root, dirs, files in list_dirs:
+            for filename in files:
+                if filename.endswith('.txt'):
+                    with open(ip_address_path, 'a') as sf:
+                        with open(os.path.join(root, filename)) as fp:
+                            mult_lines = fp.read()
+                            match = re.findall('eth.*?(\d+\.\d+\.\d+\.\d+)', mult_lines)
+                            if match:
+                                board_type = get_board_type(filename)
+                                board_instance = get_board_instance(root, filename)
+                                sf.write(board_type + '\t' + board_instance +
+                                    '\t' + match[-1] + '\n' )
 
     # dt-self-test
     if results and kernel_tree and kernel_version and dt_tests:

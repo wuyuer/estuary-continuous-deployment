@@ -7,7 +7,6 @@ import os
 import shutil
 import argparse
 import ConfigParser
-import pdb
 
 from lib import configuration
 
@@ -82,8 +81,8 @@ hi6220_hikey = {'device_type': 'hi6220-hikey',
                'lpae': False,
                'fastboot': False}
 
-dummy_ssh = {'templates': [ 'boot.json',
-                            'device_read_perf.json',
+dummy_ssh = {'device_type': 'dummy_ssh',
+             'templates': [ 'device_read_perf.json',
                             'iperf_client.json',
                             'ltp.json',
                             'perf.json',
@@ -107,101 +106,6 @@ snowball = {'device_type': 'snowball',
                           'generic-arm-dtb-kernel-ci-hackbench-template.json'],
             'defconfig_blacklist': ['arm-allmodconfig'],
             'kernel_blacklist': [],
-            'nfs_blacklist': [],
-            'lpae': False,
-            'fastboot': False}
-
-qemu_arm_cortex_a9 = {'device_type': 'qemu-arm-cortex-a9',
-                      'templates': ['generic-arm-dtb-kernel-ci-boot-template.json',
-                                    'generic-arm-dtb-kernel-ci-kselftest-template.json'],
-                      'defconfig_blacklist': ['arm-allmodconfig'],
-                      'kernel_blacklist': [],
-                      'nfs_blacklist': [],
-                      'lpae': False,
-                      'fastboot': False}
-
-qemu_arm_cortex_a9_legacy = {'device_type': 'qemu-arm-cortex-a9',
-                             'templates': ['generic-arm-kernel-ci-boot-template.json',
-                                           'generic-arm-dtb-kernel-ci-kselftest-template.json'],
-                             'defconfig_blacklist': ['arm-allmodconfig'],
-                             'kernel_blacklist': [],
-                             'nfs_blacklist': [],
-                             'lpae': False,
-                             'fastboot': False}
-
-qemu_arm_cortex_a15_a7 = {'device_type': 'qemu-arm-cortex-a15',
-                          'templates': ['generic-arm-dtb-kernel-ci-boot-template.json',
-                                        'generic-arm-dtb-kernel-ci-kselftest-template.json'],
-                          'defconfig_blacklist': ['arm-allmodconfig'],
-                          'kernel_blacklist': [],
-                          'nfs_blacklist': [],
-                          'lpae': True,
-                          'fastboot': False}
-
-qemu_arm_cortex_a15 = {'device_type': 'qemu-arm-cortex-a15',
-                       'templates': ['generic-arm-dtb-kernel-ci-boot-template.json',
-                                     'generic-arm-dtb-kernel-ci-kselftest-template.json'],
-                       'defconfig_blacklist': ['arm-allmodconfig'],
-                       'kernel_blacklist': [],
-                       'nfs_blacklist': [],
-                       'lpae': True,
-                       'fastboot': False}
-
-qemu_arm_cortex_a15_legacy = {'device_type': 'qemu-arm-cortex-a15',
-                              'templates': ['generic-arm-dtb-kernel-ci-boot-template.json',
-                                            'generic-arm-dtb-kernel-ci-kselftest-template.json'],
-                              'defconfig_blacklist': ['arm-allmodconfig'],
-                              'kernel_blacklist': [],
-                              'nfs_blacklist': [],
-                              'lpae': True,
-                              'fastboot': False}
-
-qemu_arm = {'device_type': 'qemu-arm',
-            'templates': ['generic-arm-kernel-ci-boot-template.json',
-                          'generic-arm-dtb-kernel-ci-kselftest-template.json'],
-            'defconfig_blacklist': ['arm-allmodconfig'],
-            'kernel_blacklist': ['v3.10',
-                                 'lsk-v3.10',
-                                 'v3.12',
-                                 'lsk-v3.12'],
-            'nfs_blacklist': [],
-            'lpae': False,
-            'fastboot': False}
-
-qemu_aarch64 = {'device_type': 'qemu-aarch64',
-                'templates': ['generic-arm64-kernel-ci-boot-template.json',
-                              'generic-arm64-kernel-ci-kselftest-template.json'],
-                'defconfig_blacklist': ['arm64-allnoconfig',
-                                        'arm64-allmodconfig'],
-                'kernel_blacklist': [],
-                'nfs_blacklist': [],
-                'lpae': False,
-                'fastboot': False}
-juno = {'device_type': 'juno',
-        'templates': ['juno-arm64-dtb-kernel-ci-boot-template.json',
-                      'generic-arm64-dtb-kernel-ci-boot-nfs-template.json',
-                      'juno-arm64-dtb-kernel-ci-ltp-mm-template.json',
-                      'juno-arm64-dtb-kernel-ci-kselftest-template.json'],
-        'defconfig_blacklist': ['arm64-allnoconfig',
-                                'arm64-allmodconfig'],
-        'kernel_blacklist': [],
-        'nfs_blacklist': [],
-        'lpae': False,
-        'fastboot': False}
-
-juno_kvm = {'device_type': 'juno',
-            'templates': ['generic-arm64-boot-kvm-template.json',
-                          'generic-arm64-boot-kvm-uefi-template.json'],
-            'defconfig_blacklist': ['arm64-allnoconfig',
-                                    'arm64-allmodconfig'],
-            'kernel_blacklist': ['v3.10',
-                                 'lsk-v3.10',
-                                 'v3.12',
-                                 'lsk-v3.12',
-                                 'v3.14',
-                                 'lsk-v3.14',
-                                 'v3.18',
-                                 'lsk-v3.18'],
             'nfs_blacklist': [],
             'lpae': False,
             'fastboot': False}
@@ -258,15 +162,15 @@ device_map = {'omap4-panda-es.dtb': [panda_es],
               'hip05-d02.dtb': [d02],
               'hisi-x5hd2-dkb.dtb': [hisi_x5hd2_dkb],
               'ste-snowball.dtb': [snowball],
-              'vexpress-v2p-ca15-tc1.dtb': [qemu_arm_cortex_a15],
-              'vexpress-v2p-ca15-tc1-legacy': [qemu_arm_cortex_a15_legacy],
-              'vexpress-v2p-ca15_a7.dtb': [qemu_arm_cortex_a15_a7],
-              'vexpress-v2p-ca9.dtb': [qemu_arm_cortex_a9],
-              'vexpress-v2p-ca9-legacy': [qemu_arm_cortex_a9_legacy],
-              'qemu-arm-legacy': [qemu_arm],
-              'qemu-aarch64-legacy': [qemu_aarch64],
-              'juno.dtb': [juno, juno_kvm],
-              'hi6220-hikey.dtb': [hi6220_hikey],
+              #'vexpress-v2p-ca15-tc1.dtb': [qemu_arm_cortex_a15],
+              #'vexpress-v2p-ca15-tc1-legacy': [qemu_arm_cortex_a15_legacy],
+              #'vexpress-v2p-ca15_a7.dtb': [qemu_arm_cortex_a15_a7],
+              #'vexpress-v2p-ca9.dtb': [qemu_arm_cortex_a9],
+              #'vexpress-v2p-ca9-legacy': [qemu_arm_cortex_a9_legacy],
+              #'qemu-arm-legacy': [qemu_arm],
+              #'qemu-aarch64-legacy': [qemu_aarch64],
+              #'juno.dtb': [juno, juno_kvm],
+              #'hi6220-hikey.dtb': [hi6220_hikey],
               'x86': [x86, x86_atom330],
               'x86-kvm': [x86_kvm]}
 
@@ -309,17 +213,17 @@ def create_jobs(base_url, kernel, plans, platform_list, targets, priority):
             defconfigs = []
             for plan in plans:
                 if plan != 'boot':
-                        config = ConfigParser.ConfigParser()
-                        try:
-                            config.read(cwd + '/templates/' + plan + '/' + plan + '.ini')
-                            test_suite = config.get(plan, 'suite')
-                            test_set = config.get(plan, 'set')
-                            test_desc = config.get(plan, 'description')
-                            test_type = config.get(plan, 'type')
-                            defconfigs = config.get(plan, 'defconfigs').split(',')
-                        except:
-                            print "Unable to load test configuration"
-                            exit(1)
+                    config = ConfigParser.ConfigParser()
+                    try:
+                        config.read(cwd + '/templates/' + plan + '/' + plan + '.ini')
+                        test_suite = config.get(plan, 'suite')
+                        test_set = config.get(plan, 'set')
+                        test_desc = config.get(plan, 'description')
+                        test_type = config.get(plan, 'type')
+                        defconfigs = config.get(plan, 'defconfigs').split(',')
+                    except:
+                        print "Unable to load test configuration"
+                        exit(1)
                 if 'BIG_ENDIAN' in defconfig and plan != 'boot-be':
                     print 'BIG_ENDIAN is not supported on %s. Skipping JSON creation' % device_type
                 elif 'LPAE' in defconfig and not lpae:
@@ -356,7 +260,11 @@ def create_jobs(base_url, kernel, plans, platform_list, targets, priority):
                                     for line in fin:
                                         tmp = line.replace('{dtb_url}', platform)
                                         tmp = tmp.replace('{kernel_url}', kernel)
-                                        tmp = tmp.replace('{device_type}', device_type)
+                                        # add by wuyanjun
+                                        if plan != 'boot':
+                                            tmp = tmp.replace('{device_type}', 'dummy-ssh')
+                                        else:
+                                            tmp = tmp.replace('{device_type}', device_type)
                                         tmp = tmp.replace('{job_name}',\
                                                 job_json.split("/")[-1].split(".json")[0])
                                         tmp = tmp.replace('{image_type}', image_type)
@@ -444,8 +352,8 @@ def walk_url(url, plans=None, arch=None, targets=None, priority=None):
                 kernel = url + name
                 base_url = url
                 # qemu-aarch64,legacy
-                if 'arm64-defconfig' in url:
-                    legacy_platform_list.append(url + 'qemu-aarch64-legacy')
+                #if 'arm64-defconfig' in url:
+                #    legacy_platform_list.append(url + 'qemu-aarch64-legacy')
             if name.endswith('.dtb') and name in device_map:
                 if base_url and base_url in url:
                     platform_list.append(url + name)
@@ -470,8 +378,8 @@ def walk_url(url, plans=None, arch=None, targets=None, priority=None):
                 kernel = url + name
                 base_url = url
                 # qemu-aarch64,legacy
-                if 'arm64-defconfig' in url:
-                    legacy_platform_list.append(url + 'qemu-aarch64-legacy')
+                #if 'arm64-defconfig' in url:
+                #    legacy_platform_list.append(url + 'qemu-aarch64-legacy')
             if name.endswith('.dtb') and name in device_map:
                 if base_url and base_url in url:
                     platform_list.append(url + name)
