@@ -97,7 +97,8 @@ def get_board_type(directory, filename):
             board_verify = test_info['board'].split(',')[0]
             for key in device_map.keys():
                 if device_map[key][0] == board_verify:
-                    board_type = board_verify
+                    board_type = key
+                    break
                 else:
                     board_type = ''
         return board_type
@@ -137,30 +138,30 @@ def parser_and_get_result(results, directory, report_directory):
     list_dirs = os.walk(directory)
 
     for root, dirs, files in list_dirs:
-    for filename in files:
-        if filename.endswith('.txt'):
-            board_type = get_board_type(directory, filename)
-            plan = get_plans(report_directory, filename)
-            if board_type and plan:
-                summary = board_type + '_' + plan + '_summary.txt'
-            elif board_type:
-                summary = board_type + '_summary.txt'
-            elif plan:
-                summary = plan + '_summary.txt'
-            else:
-                summary = 'summary.txt'
+        for filename in files:
+            if filename.endswith('.txt'):
+                board_type = get_board_type(directory, filename)
+                plan = get_plans(report_directory, filename)
+                if board_type and plan:
+                    summary = board_type + '_' + plan + '_summary.txt'
+                elif board_type:
+                    summary = board_type + '_summary.txt'
+                elif plan:
+                    summary = plan + '_summary.txt'
+                else:
+                    summary = 'summary.txt'
 
-            with open(os.path.join(report_directory, summary), 'a') as sf:
-                with open(os.path.join(root, filename)) as fp:
-                    write_flag = 0
-                    for line in fp:
-                        if write_flag == 1:
-                            sf.write(line)
-                            continue
-                        if re.search('=======', line):
-                            write_flag = 1
-                            sf.write(line)
-                    sf.write('\n')
+                with open(os.path.join(report_directory, summary), 'a') as sf:
+                    with open(os.path.join(root, filename)) as fp:
+                        write_flag = 0
+                        for line in fp:
+                            if write_flag == 1:
+                                sf.write(line)
+                                continue
+                            if re.search('=======', line):
+                                write_flag = 1
+                                sf.write(line)
+                        sf.write('\n')
 
 # add by wuyanjun
 # get the ip address of boards for the application jobs
