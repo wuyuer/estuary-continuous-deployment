@@ -134,56 +134,54 @@ def get_plans(directory, filename):
 # add by wuyanjun
 # parser the test result
 def parser_and_get_result(results, directory, report_directory):
-    if results and directory:
-        list_dirs = os.walk(directory)
+    list_dirs = os.walk(directory)
 
-        for root, dirs, files in list_dirs:
-            for filename in files:
-                if filename.endswith('.txt'):
-                    board_type = get_board_type(directory, filename)
-                    plan = get_plans(report_directory, filename)
-                    if board_type and plan:
-                        summary = board_type + '_' + plan + '_summary.txt'
-                    elif board_type:
-                        summary = board_type + '_summary.txt'
-                    elif plan:
-                        summary = plan + '_summary.txt'
-                    else:
-                        summary = 'summary.txt'
+    for root, dirs, files in list_dirs:
+    for filename in files:
+        if filename.endswith('.txt'):
+            board_type = get_board_type(directory, filename)
+            plan = get_plans(report_directory, filename)
+            if board_type and plan:
+                summary = board_type + '_' + plan + '_summary.txt'
+            elif board_type:
+                summary = board_type + '_summary.txt'
+            elif plan:
+                summary = plan + '_summary.txt'
+            else:
+                summary = 'summary.txt'
 
-                    with open(os.path.join(report_directory, summary), 'a') as sf:
-                        with open(os.path.join(root, filename)) as fp:
-                            write_flag = 0
-                            for line in fp:
-                                if write_flag == 1:
-                                    sf.write(line)
-                                    continue
-                                if re.search('=======', line):
-                                    write_flag = 1
-                                    sf.write(line)
-                            sf.write('\n')
+            with open(os.path.join(report_directory, summary), 'a') as sf:
+                with open(os.path.join(root, filename)) as fp:
+                    write_flag = 0
+                    for line in fp:
+                        if write_flag == 1:
+                            sf.write(line)
+                            continue
+                        if re.search('=======', line):
+                            write_flag = 1
+                            sf.write(line)
+                    sf.write('\n')
 
 # add by wuyanjun
 # get the ip address of boards for the application jobs
 def get_ip_board_mapping(results, directory, report_directory):
-    if results and directory:
-        list_dirs = os.walk(directory)
-        ip_address = 'device_ip_type.txt'
-        ip_address_path = os.path.join(report_directory, ip_address)
-        if os.path.exists(ip_address_path):
-            os.remove(ip_address_path)
-        for root, dirs, files in list_dirs:
-            for filename in files:
-                if filename.endswith('.txt'):
-                    with open(ip_address_path, 'a') as sf:
-                        with open(os.path.join(root, filename)) as fp:
-                            mult_lines = fp.read()
-                            match = re.findall('eth.*?(\d+\.\d+\.\d+\.\d+)', mult_lines)
-                            if match:
-                                board_type = get_board_type(root, filename)
-                                board_instance = get_board_instance(root, filename)
-                                sf.write(board_type + '\t' + board_instance +
-                                    '\t' + match[-1] + '\n' )
+    list_dirs = os.walk(directory)
+    ip_address = 'device_ip_type.txt'
+    ip_address_path = os.path.join(report_directory, ip_address)
+    if os.path.exists(ip_address_path):
+        os.remove(ip_address_path)
+    for root, dirs, files in list_dirs:
+        for filename in files:
+            if filename.endswith('.txt'):
+                with open(ip_address_path, 'a') as sf:
+                    with open(os.path.join(root, filename)) as fp:
+                        mult_lines = fp.read()
+                        match = re.findall('eth.*?(\d+\.\d+\.\d+\.\d+)', mult_lines)
+                        if match:
+                            board_type = get_board_type(root, filename)
+                            board_instance = get_board_instance(root, filename)
+                            sf.write(board_type + '\t' + board_instance +
+                                '\t' + match[-1] + '\n' )
 
 def boot_report(config):
     connection, jobs, duration =  parse_json(config.get("boot"))
@@ -568,8 +566,9 @@ def boot_report(config):
                     f.write('    %s   %s   %ss   boot-test: %s\n' %
                             (result['device_type'], result['device_name'], result['kernel_boot_time'], result['result']))
     # add by wuyanjun
-    parser_and_get_result(results, directory, report_directory)
-    get_ip_board_mapping(results, directory, report_directory)
+    if results and directory:
+        parser_and_get_result(results, directory, report_directory)
+        get_ip_board_mapping(results, directory, report_directory)
 
     # dt-self-test
     if results and kernel_tree and kernel_version and dt_tests:
