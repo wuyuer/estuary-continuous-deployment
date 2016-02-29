@@ -25,14 +25,19 @@ def get_arch(platform='D02'):
         arch = 'arm64'
     elif platform == 'D01':
         arch = 'arm'
-    else:
+    elif platform == 'x86':
         arch = 'x86'
+    else:
+	arch = ''
     return arch
 
-def publish( platform='D02', directory=None, job=None):
+def publish( platform='', directory=None, job=None):
     global url
-    publish_path = os.path.join(job, directory, platform.lower() + '-' + \
+    if get_arch(platform):
+        publish_path = os.path.join(job, directory, platform.lower() + '-' + \
             get_arch(platform))
+    else:
+	publish_path = os.path.join(job, directory)
     print publish_path
     headers = {
             'Authorization': token
@@ -77,6 +82,9 @@ if __name__ == "__main__":
     except getopt.GetoptError as err:
         print str(err)
         sys.exit(2)
+    platform = ''
+    direc = ''
+    job = ''
     for option, value in opts:
         if option == '-p':
             platform = value
