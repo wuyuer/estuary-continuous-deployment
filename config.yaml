@@ -2,11 +2,9 @@ Build:
     # parameters for the build 
     Distro:
         - Ubuntu
-        - Fedora
 
     Platform:
         - D02
-        - D01
 
 # the dictionary for the board and arch mapping
 Arch:
