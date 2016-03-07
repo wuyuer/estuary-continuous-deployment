@@ -46,7 +46,7 @@ def walk(url):
                 address_list.append(url + name)
             if name not in download_file:
                 download_file.append(name)
-        if 'mage' in name:
+        if 'mage' in name or 'cpio' in name:
             if url+name not in address_list:
                 address_list.append(url + name)
             if name not in download_file:
