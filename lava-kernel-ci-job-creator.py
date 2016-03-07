@@ -61,6 +61,8 @@ d01 = {'device_type': 'd01',
 
 d02 = {'device_type': 'd02',
 		'templates': ['d02-arm64-kernel-ci-boot-template.json',
+                              'd02-arm64-kernel-ci-boot-sata-template.json',
+                              'd02-arm64-kernel-ci-boot-nfs-template.json',
 			      'd02-arm64-kernel-ci-weekly-template.json'],
 		'defconfig_blacklist': ['arm64-allnoconfig',
 					'arm64-allmodconfig'],
@@ -212,7 +214,7 @@ def create_jobs(base_url, kernel, plans, platform_list, targets, priority):
             test_type = None
             defconfigs = []
             for plan in plans:
-                if plan != 'boot':
+                if 'boot' in plan or 'BOOT' in plan:
                     config = ConfigParser.ConfigParser()
                     try:
                         config.read(cwd + '/templates/' + plan + '/' + plan + '.ini')
