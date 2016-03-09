@@ -225,7 +225,6 @@ def create_jobs(base_url, kernel, plans, platform_list, targets, priority, distr
     defconfig = build_info[3]
     has_modules = True
     checked_modules = False
-
     for platform in platform_list:
         platform_name = platform.split('/')[-1]
         for device in device_map[platform_name]:
@@ -289,7 +288,7 @@ def create_jobs(base_url, kernel, plans, platform_list, targets, priority, distr
                                         tmp = tmp.replace('{kernel_url}', kernel)
                                         # add by wuyanjun
                                         if 'boot' not in plan and 'BOOT' not in plan:
-                                            tmp = tmp.replace('{device_type}', 'dummy-ssh')
+                                            tmp = tmp.replace('{device_type}', 'dummy_ssh'+'_'+device_type)
                                         else:
                                             tmp = tmp.replace('{device_type}', device_type)
                                         tmp = tmp.replace('{job_name}',\
