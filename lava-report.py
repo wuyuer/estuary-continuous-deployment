@@ -125,7 +125,6 @@ def get_plans(directory, filename):
         root_dir = directory
         while '.git' not in os.listdir(root_dir):
             root_dir = os.path.join(root_dir, os.path.pardir)
-        print root_dir
         root_dir = os.path.abspath(root_dir)
         for item in m:
             for root, dirs, files in os.walk(os.path.join(root_dir, "templates")):
@@ -152,18 +151,18 @@ def parser_and_get_result(results, directory, report_directory):
                     summary = plan + '_summary.txt'
                 else:
                     summary = 'summary.txt'
-
-                with open(os.path.join(report_directory, summary), 'a') as sf:
-                    with open(os.path.join(root, filename)) as fp:
-                        write_flag = 0
-                        for line in fp:
-                            if write_flag == 1:
-                                sf.write(line)
-                                continue
-                            if re.search('=======', line):
-                                write_flag = 1
-                                sf.write(line)
-                        sf.write('\n')
+                if 'dummy_ssh' in filename or 'dummy-ssh' in filename:
+                    with open(os.path.join(report_directory, summary), 'a') as sf:
+                        with open(os.path.join(root, filename)) as fp:
+                            write_flag = 0
+                            for line in fp:
+                                if write_flag == 1:
+                                    sf.write(line)
+                                    continue
+                                if re.search('=======', line):
+                                    write_flag = 1
+                                    sf.write(line)
+                            sf.write('\n')
 
 # add by wuyanjun
 # get the ip address of boards for the application jobs
@@ -496,17 +495,17 @@ def boot_report(config):
         else:
             report_directory = results_directory
         with open(os.path.join(report_directory, boot), 'a') as f:
-            f.write('To: %s\n' % config.get("email"))
-            f.write('From: bot@kernelci.org\n')
+            #f.write('To: %s\n' % config.get("email"))
+            #f.write('From: bot@kernelci.org\n')
             f.write('Subject: %s boot: %s boots: %s passed, %s failed (%s)\n' % (kernel_tree,
                                                                                 str(total),
                                                                                 str(passed),
                                                                                 str(failed),
                                                                                 kernel_version))
             f.write('\n')
-            f.write('Full Build Report: http://192.168.1.108:5000/build/%s/kernel/%s/\n' % (kernel_tree, kernel_version))
-            f.write('Full Boot Report: http://192.168.1.108:5000/boot/all/job/%s/kernel/%s/\n' % (kernel_tree, kernel_version))
-            f.write('\n')
+            #f.write('Full Build Report: http://192.168.1.108:5000/build/%s/kernel/%s/\n' % (kernel_tree, kernel_version))
+            #f.write('Full Boot Report: http://192.168.1.108:5000/boot/all/job/%s/kernel/%s/\n' % (kernel_tree, kernel_version))
+            #f.write('\n')
             f.write('Total Duration: %.2f minutes\n' % (duration / 60))
             f.write('Tree/Branch: %s\n' % kernel_tree)
             f.write('Git Describe: %s\n' % kernel_version)
@@ -587,18 +586,18 @@ def boot_report(config):
                     failed += 1
         total = passed + failed
         with open(os.path.join(report_directory, dt_self_test), 'a') as f:
-            f.write('To: %s\n' % config.get("email"))
-            f.write('From: bot@kernelci.org\n')
+            #f.write('To: %s\n' % config.get("email"))
+            #f.write('From: bot@kernelci.org\n')
             f.write('Subject: %s dt-runtime-unit-tests: %s boards tested: %s passed, %s failed (%s)\n' % (kernel_tree,
                                                                                                            str(total),
                                                                                                            str(passed),
                                                                                                            str(failed),
                                                                                                            kernel_version))
             f.write('\n')
-            f.write('Full Build Report: http://192.168.1.108:5000/build/%s/kernel/%s/\n' % (kernel_tree, kernel_version))
-            f.write('Full Boot Report: http://192.168.1.108:5000/boot/all/job/%s/kernel/%s/\n' % (kernel_tree, kernel_version))
-            f.write('Full Test Report: http://192.168.1.108:5000/test/%s/kernel/%s/\n' % (kernel_tree, kernel_version))
-            f.write('\n')
+            #f.write('Full Build Report: http://192.168.1.108:5000/build/%s/kernel/%s/\n' % (kernel_tree, kernel_version))
+            #f.write('Full Boot Report: http://192.168.1.108:5000/boot/all/job/%s/kernel/%s/\n' % (kernel_tree, kernel_version))
+            #f.write('Full Test Report: http://192.168.1.108:5000/test/%s/kernel/%s/\n' % (kernel_tree, kernel_version))
+            #f.write('\n')
             f.write('Tree/Branch: %s\n' % kernel_tree)
             f.write('Git Describe: %s\n' % kernel_version)
             first = True
