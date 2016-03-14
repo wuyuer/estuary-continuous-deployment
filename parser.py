@@ -14,15 +14,18 @@ import fnmatch
 import time
 import re
 import sys
+import shutil
 import pdb
 
 job_map = {}
 
-def parser_all_files(result_dir):
-    whole_summary_name = 'whole_summary.txt'
-    summary_path = os.path.join(result_dir, whole_summary_name)
-    if os.path.exists(summary_path):
-        os.remove(summary_path)
+parser_result = 'parser_result'
+board_type_pre = 'board_type_'
+summary_post = '_summary.txt'
+board_pre = 'board#'
+whole_summary_name = 'whole_summary.txt'
+
+def summary_for_kind(result_dir):
     for root, dirs, files in os.walk(result_dir):
         for filename in files:
             if filename.endswith(whole_summary_name):
@@ -38,9 +41,19 @@ def parser_all_files(result_dir):
                 if test_kind:
                     board_type = filename.split(test_kind)[0][:-1]
                 else:
-                    board_type = filename.split('_summary.txt')[0]
+                    board_type = filename.split(summary_post)[0]
                 if test_kind and board_type:
-                    with open(board_type + '#' + test_kind, 'a') as f:
+                    board_class = os.path.join(parser_result, board_type_pre + board_type)
+                    if not os.path.join(parser_result):
+                        os.mkdir(parser_result)
+                    # create the directory for the special kind of board
+                    if not os.path.exists(board_class):
+                        os.makedirs(board_class)
+                    # create the test for each kind test, each file with one file
+                    test_kind_name = os.path.join(board_class, test_kind)
+                    if os.path.exists(test_kind_name):
+                        os.remove(test_kind_name)
+                    with open(test_kind_name, 'a') as f:
                         with open(os.path.join(root, filename), 'r') as rfd:
                             contents = rfd.read()
                         f.write(board_type + '_' + test_kind + '\n')
@@ -51,6 +64,35 @@ def parser_all_files(result_dir):
                                 fail_flag = re.findall('FAIL', case)
                                 if fail_flag:
                                     f.write( '\t' + testname + '     ' + 'FAIL\n')
+
+def summary_for_board(result_dir):
+    for root, dirs, files in os.walk(result_dir):
+        for dirname in dirs:
+            if board_type_pre in dirname:
+                board_type = dirname.split(board_type_pre)[-1]
+                board_summary_name = board_pre + board_type
+                if os.path.exists(board_summary_name):
+                    os.remove(board_summary_name)
+                for root, dirs, files in os.walk(root):
+                    for filename in files:
+                        with open(board_summary_name, 'ab') as fd:
+                            with open(os.path.join(root, filename), 'rb') as rfd:
+                                lines = rfd.read()
+                                fd.write(lines)
+
+def parser_all_files(result_dir):
+    summary_path = os.path.join(result_dir, whole_summary_name)
+    if os.path.exists(summary_path):
+        os.remove(summary_path)
+    # get the each kind tests in each file
+    summary_for_kind(result_dir)
+    # summary each file for each kind of board
+    if os.path.exists(parser_result):
+        summary_for_board(parser_result)
+    if os.path.exists(os.path.join(result_dir, parser_result)):
+        shutil.rmtree(os.path.join(result_dir, parser_result))
+    shutil.move(parser_result, result_dir)
+
 
 if __name__ == '__main__':
     try:
