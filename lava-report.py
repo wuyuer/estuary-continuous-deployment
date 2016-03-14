@@ -137,32 +137,37 @@ def get_plans(directory, filename):
 # parser the test result
 def parser_and_get_result(results, directory, report_directory):
     list_dirs = os.walk(directory)
-
+    summary_post = '_summary.txt'
     for root, dirs, files in list_dirs:
         for filename in files:
+            if filename.endswith('device_ip_type.txt'):
+                os.remove(os.path.join(root, filename))
+                continue
             if filename.endswith('.txt'):
                 board_type = get_board_type(directory, filename)
                 plan = get_plans(report_directory, filename)
                 if board_type and plan:
-                    summary = board_type + '_' + plan + '_summary.txt'
+                    summary = board_type + '_' + plan + summary_post
                 elif board_type:
-                    summary = board_type + '_summary.txt'
+                    summary = board_type + summary_post
                 elif plan:
-                    summary = plan + '_summary.txt'
+                    summary = plan + summary_post
                 else:
                     summary = 'summary.txt'
                 if 'dummy_ssh' in filename or 'dummy-ssh' in filename:
                     with open(os.path.join(report_directory, summary), 'a') as sf:
                         with open(os.path.join(root, filename)) as fp:
-                            write_flag = 0
-                            for line in fp:
-                                if write_flag == 1:
-                                    sf.write(line)
-                                    continue
-                                if re.search('=======', line):
-                                    write_flag = 1
-                                    sf.write(line)
-                            sf.write('\n')
+                            lines = fp.readlines()
+                        write_flag = 0
+                        for i in range(0, len(lines)):
+                            line = lines[i]
+                            if write_flag == 1:
+                                sf.write(line)
+                                continue
+                            if re.search('=======', line) and re.search('Test.*?case.*?Result', lines[i+3]):
+                                write_flag = 1
+                                sf.write(line)
+                        sf.write('\n')
 
 # add by wuyanjun
 # get the ip address of boards for the application jobs
@@ -476,10 +481,16 @@ def boot_report(config):
             #                                                                     config.get("lab"),
             #                                                                     html))
             #    push('PUT', api_url, data=data, headers=headers)
+    if config.get("lab"):
+        report_directory = os.path.join(results_directory, config.get("lab"))
+        utils.mkdir(report_directory)
+    else:
+        report_directory = results_directory
 
-    if results and kernel_tree and kernel_version:
-        print 'Creating boot summary for %s' % kernel_version
-        boot = '%s-boot-report.txt' % kernel_version
+    if results and kernel_tree and kernel_version and 'boot' in test_plan or 'BOOT' in test_plan:
+        print 'Creating summary for %s' % (kernel_version)
+        boot = '%s-boot-report.txt' % (kernel_version)
+        boot = boot.replace('boot', test_plan)
         passed = 0
         failed = 0
         for defconfig, results_list in results.items():
@@ -489,11 +500,6 @@ def boot_report(config):
                 else:
                     failed += 1
         total = passed + failed
-        if config.get("lab"):
-            report_directory = os.path.join(results_directory, config.get("lab"))
-            utils.mkdir(report_directory)
-        else:
-            report_directory = results_directory
         with open(os.path.join(report_directory, boot), 'a') as f:
             #f.write('To: %s\n' % config.get("email"))
             #f.write('From: bot@kernelci.org\n')
@@ -570,7 +576,7 @@ def boot_report(config):
     # add by wuyanjun
     if results and directory:
         parser_and_get_result(results, directory, report_directory)
-        get_ip_board_mapping(results, directory, report_directory)
+        #get_ip_board_mapping(results, directory, report_directory)
 
     # dt-self-test
     if results and kernel_tree and kernel_version and dt_tests:

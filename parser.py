@@ -24,6 +24,7 @@ board_type_pre = 'board_type_'
 summary_post = '_summary.txt'
 board_pre = 'board#'
 whole_summary_name = 'whole_summary.txt'
+match_str = '[A-Z]+_?[A-Z]*'
 
 def summary_for_kind(result_dir):
     for root, dirs, files in os.walk(result_dir):
@@ -31,9 +32,11 @@ def summary_for_kind(result_dir):
             if filename.endswith(whole_summary_name):
                 continue
             if 'boot' in filename or 'BOOT' in filename:
+                if not re.findall(match_str, filename):
+                   print filename
                 continue
             if 'summary' in filename:
-                test_case_name = re.findall('[A-Z]+_?[A-Z]*', filename)
+                test_case_name = re.findall(match_str, filename)
                 if test_case_name:
                     test_kind = test_case_name[0]
                 else:
@@ -44,7 +47,7 @@ def summary_for_kind(result_dir):
                     board_type = filename.split(summary_post)[0]
                 if test_kind and board_type:
                     board_class = os.path.join(parser_result, board_type_pre + board_type)
-                    if not os.path.join(parser_result):
+                    if not os.path.exists(parser_result):
                         os.mkdir(parser_result)
                     # create the directory for the special kind of board
                     if not os.path.exists(board_class):
@@ -79,6 +82,7 @@ def summary_for_board(result_dir):
                             with open(os.path.join(root, filename), 'rb') as rfd:
                                 lines = rfd.read()
                                 fd.write(lines)
+                        shutil.move(board_summary_name, result_dir)
 
 def parser_all_files(result_dir):
     summary_path = os.path.join(result_dir, whole_summary_name)
@@ -92,7 +96,6 @@ def parser_all_files(result_dir):
     if os.path.exists(os.path.join(result_dir, parser_result)):
         shutil.rmtree(os.path.join(result_dir, parser_result))
     shutil.move(parser_result, result_dir)
-
 
 if __name__ == '__main__':
     try:
